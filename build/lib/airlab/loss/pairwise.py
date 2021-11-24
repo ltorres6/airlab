@@ -181,9 +181,7 @@ class NCC(_PairwiseImageLoss):
 
         value = (
             -1.0
-            * th.sum(
-                (fixed_image_valid - th.mean(fixed_image_valid)) * (moving_image_valid - th.mean(moving_image_valid))
-            )
+            * th.sum((fixed_image_valid - th.mean(fixed_image_valid)) * (moving_image_valid - th.mean(moving_image_valid)))
             / th.sqrt(
                 th.sum((fixed_image_valid - th.mean(fixed_image_valid)) ** 2)
                 * th.sum((moving_image_valid - th.mean(moving_image_valid)) ** 2)
@@ -591,9 +589,7 @@ class SSIM(_PairwiseImageLoss):
 
         # calculate mean and variance of the fixed image
         self._mean_fixed_image = F.conv2d(self._fixed_image.image, self._kernel)
-        self._variance_fixed_image = F.conv2d(self._fixed_image.image.pow(2), self._kernel) - (
-            self._mean_fixed_image.pow(2)
-        )
+        self._variance_fixed_image = F.conv2d(self._fixed_image.image.pow(2), self._kernel) - (self._mean_fixed_image.pow(2))
 
     def forward(self, displacement):
         # compute displacement field
@@ -621,9 +617,9 @@ class SSIM(_PairwiseImageLoss):
             self._mean_fixed_image.pow(2) + mean_moving_image.pow(2) + self._c1
         )
 
-        contrast = (
-            2 * th.sqrt(self._variance_fixed_image + 1e-10) * th.sqrt(variance_moving_image + 1e-10) + self._c2
-        ) / (self._variance_fixed_image + variance_moving_image + self._c2)
+        contrast = (2 * th.sqrt(self._variance_fixed_image + 1e-10) * th.sqrt(variance_moving_image + 1e-10) + self._c2) / (
+            self._variance_fixed_image + variance_moving_image + self._c2
+        )
 
         structure = (covariance_fixed_moving + self._c3) / (
             th.sqrt(self._variance_fixed_image + 1e-10) * th.sqrt(variance_moving_image + 1e-10) + self._c3
@@ -634,4 +630,3 @@ class SSIM(_PairwiseImageLoss):
         value = -1.0 * th.masked_select(sim, mask)
 
         return self.return_loss(value)
-

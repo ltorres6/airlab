@@ -57,9 +57,7 @@ class Image:
         elif type(tensor_image) == th.Tensor:
             self.image = tensor_image.squeeze().unsqueeze(0).unsqueeze(0)
         else:
-            raise Exception(
-                "A numpy ndarray or a torch tensor was expected as argument. Got " + str(type(tensor_image))
-            )
+            raise Exception("A numpy ndarray or a torch tensor was expected as argument. Got " + str(type(tensor_image)))
 
         self.size = image_size
         self.spacing = image_spacing
@@ -363,3 +361,42 @@ def create_image_pyramid(image, down_sample_factor):
         sys.exit(-1)
 
     return image_pyramide
+
+
+def create_downsampled_image(image, down_sample_factor):
+
+    image_dim = len(image.size)
+    if down_sample_factor[0] == 1:
+        return image
+
+    if image_dim == 2:
+        level = down_sample_factor
+        sigma = (th.tensor(level) / 2).to(dtype=th.float32)
+
+        kernel = kernelFunction.gaussian_kernel_2d(sigma.numpy(), asTensor=True)
+        padding = np.array([(x - 1) / 2 for x in kernel.size()], dtype=int).tolist()
+        kernel = kernel.unsqueeze(0).unsqueeze(0)
+        kernel = kernel.to(dtype=image.dtype, device=image.device)
+
+        image_sample = F.conv2d(image.image, kernel, stride=level, padding=padding)
+        image_size = image_sample.size()[-image_dim:]
+        image_spacing = [x * y for x, y in zip(image.spacing, level)]
+        image_origin = image.origin
+        return Image(image_sample, image_size, image_spacing, image_origin)
+    elif image_dim == 3:
+        level = down_sample_factor
+        sigma = (th.tensor(level) / 2).to(dtype=th.float32)
+
+        kernel = kernelFunction.gaussian_kernel_3d(sigma.numpy(), asTensor=True)
+        padding = np.array([(x - 1) / 2 for x in kernel.size()], dtype=int).tolist()
+        kernel = kernel.unsqueeze(0).unsqueeze(0)
+        kernel = kernel.to(dtype=image.dtype, device=image.device)
+
+        image_sample = F.conv3d(image.image, kernel, stride=level, padding=padding)
+        image_size = image_sample.size()[-image_dim:]
+        image_spacing = [x * y for x, y in zip(image.spacing, level)]
+        image_origin = image.origin
+        return Image(image_sample, image_size, image_spacing, image_origin)
+    else:
+        print("Error: ", image_dim, " is not supported?")
+        sys.exit(-1)
