@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import torch as th
-from numpy import inf,max
+from numpy import inf, max
 
-class _Registration():
+
+class _Registration:
     def __init__(self, verbose=True):
         # transformation of the image
         self._transformation = None
@@ -29,8 +30,8 @@ class _Registration():
 
         self._displacement = None
 
-        self._verbose=verbose
-        self.loss=inf
+        self._verbose = verbose
+        self.loss = inf
 
     def set_optimizer(self, optimizer):
         self._optimizer = optimizer
@@ -99,8 +100,8 @@ class PairwiseRegistration(_PairwiseRegistration):
         lossList = []
         loss_names = []
         for image_loss in self._image_loss:
-             lossList.append(image_loss(displacement))
-             loss_names.append(image_loss.name)
+            lossList.append(image_loss(displacement))
+            loss_names.append(image_loss.name)
 
         # compute the regularisation loss on the displacement
         for reg_disp in self._regulariser_displacement:
@@ -114,7 +115,7 @@ class PairwiseRegistration(_PairwiseRegistration):
 
         if self._verbose:
             for loss_value, loss_name in zip(lossList, loss_names):
-                print(str(loss_name) + ": " + str(loss_value.data.item()) + " ", end='', flush=True)
+                print(str(loss_name) + ": " + str(loss_value.data.item()) + " ", end="", flush=True)
             print("")
 
         # sum up all loss terms
@@ -125,28 +126,29 @@ class PairwiseRegistration(_PairwiseRegistration):
         return loss
 
     def start(self, EarlyStopping=False, StopPatience=10):
-
+        self.loss_history = []
         if EarlyStopping:
-            from copy import deepcopy
             n = 0
             try:
                 self.loss
             except:
-                self.loss=inf
+                self.loss = inf
 
         for iter_index in range(self._number_of_iterations):
             if self._verbose:
-                print(str(iter_index) + " ", end='', flush=True)
+                print(str(iter_index) + " ", end="", flush=True)
             loss = self._optimizer.step(self._closure)
+            self.loss_history.append(loss)
+
             if EarlyStopping:
                 if loss < self.loss:
                     n = 0
-                    self.loss=loss
-                    best=deepcopy(self._transformation)
+                    self.loss = loss
+                    best = self._transformation.state_dict()
                 else:
                     n += 1
                 if n > StopPatience:
-                    self._transformation = best
+                    self._transformation.load_state_dict(best)
                     return
         self.loss = loss
 
@@ -159,7 +161,7 @@ class DemonsRegistraion(_Registration):
         self._regulariser = []
 
     def set_regulariser(self, regulariser):
-            self._regulariser = regulariser
+        self._regulariser = regulariser
 
     def _closure(self):
         self._optimizer.zero_grad()
@@ -175,7 +177,7 @@ class DemonsRegistraion(_Registration):
 
         if self._verbose:
             for loss_value, loss_name in zip(lossList, loss_names):
-                print(str(loss_name) + ": " + str(loss_value.data.item()) + " ", end='', flush=True)
+                print(str(loss_name) + ": " + str(loss_value.data.item()) + " ", end="", flush=True)
 
             print("")
 
@@ -186,15 +188,23 @@ class DemonsRegistraion(_Registration):
 
         return loss
 
-    def start(self):
+    def start(self, EarlyStopping=False, stop_window=10, stop_criterion=1e-6):
+
+        if EarlyStopping:
+            self.loss_history = []
+            count = 0
 
         for iter_index in range(self._number_of_iterations):
             if self._verbose:
-                print(str(iter_index) + " ", end='', flush=True)
-
+                print(str(iter_index) + " ", end="", flush=True)
             loss = self._optimizer.step(self._closure)
-
             for regulariser in self._regulariser:
                 regulariser.regularise(self._transformation.parameters())
 
-
+            if EarlyStopping:
+                count += 1
+                self.loss_history.append(loss)
+                if count >= stop_criterion:
+                    mean_change = th.mean(self.loss_history[-stop_window:])
+                    if mean_change < stop_criterion:
+                        return
