@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .registration import PairwiseRegistration, DemonsRegistraion
+from .registration import PairwiseRegistration, DemonsRegistration
 
-__all__ = ['PairwiseRegistration', 'DemonsRegistraion']
+__all__ = ["PairwiseRegistration", "DemonsRegistration"]
+

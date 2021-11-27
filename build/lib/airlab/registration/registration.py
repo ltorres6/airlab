@@ -153,9 +153,9 @@ class PairwiseRegistration(_PairwiseRegistration):
         self.loss = loss
 
 
-class DemonsRegistraion(_Registration):
+class DemonsRegistration(_Registration):
     def __init__(self, verbose=True):
-        super(DemonsRegistraion, self).__init__(verbose=verbose)
+        super(DemonsRegistration, self).__init__(verbose=verbose)
 
         # regulariser on the displacement
         self._regulariser = []
@@ -205,7 +205,7 @@ class DemonsRegistraion(_Registration):
                 count += 1
                 self.loss_history.append(loss)
                 if count >= stop_criterion:
-                    mean_change = th.mean(self.loss_history[-stop_window:])
+                    mean_change = th.mean(th.as_tensor(self.loss_history[-stop_window:]))
                     print(f"mean change: {mean_change}")
                     if mean_change < stop_criterion:
                         return

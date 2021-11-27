@@ -205,7 +205,7 @@ class DemonsRegistration(_Registration):
                 count += 1
                 self.loss_history.append(loss)
                 if count >= stop_criterion:
-                    mean_change = th.mean(self.loss_history[-stop_window:])
+                    mean_change = th.mean(th.as_tensor(self.loss_history[-stop_window:]))
                     print(f"mean change: {mean_change}")
                     if mean_change < stop_criterion:
                         return
